@@ -1,11 +1,12 @@
 #include "PluginEditor.h"
 
 PluginEditor::PluginEditor (PluginProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p)
+    : AudioProcessorEditor (&p), processorRef (p), keyboardComponent (p.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
 {
     juce::ignoreUnused (processorRef);
 
     addAndMakeVisible (inspectButton);
+    addAndMakeVisible (keyboardComponent);
 
     // this chunk of code instantiates and opens the melatonin inspector
     inspectButton.onClick = [&] {
@@ -21,6 +22,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (400, 300);
+
+    // Grab keyboard focus so the component can receive computer keyboard keypresses
+    keyboardComponent.grabKeyboardFocus();
 }
 
 PluginEditor::~PluginEditor()
@@ -43,6 +47,7 @@ void PluginEditor::resized()
 {
     // layout the positions of your child components here
     auto area = getLocalBounds();
+    keyboardComponent.setBounds (area.removeFromBottom (100));
     area.removeFromBottom(50);
     inspectButton.setBounds (getLocalBounds().withSizeKeepingCentre(100, 50));
 }
