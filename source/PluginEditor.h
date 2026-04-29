@@ -12,6 +12,8 @@ class WaveformDisplayComponent : public juce::Component
 public:
     WaveformDisplayComponent() {}
 
+    int waveType = 0; // 0: Sine, 1: Triangle, 2: Square
+
     void paint (juce::Graphics& g) override
     {
         auto bounds = getLocalBounds().toFloat();
@@ -20,7 +22,7 @@ public:
         g.setColour (juce::Colours::black);
         g.fillRect (bounds);
 
-        // Draw a dummy sine waveform
+        // Draw the waveform
         g.setColour (juce::Colours::cyan);
         juce::Path p;
         auto width = bounds.getWidth();
@@ -31,7 +33,24 @@ public:
         for (float x = 0.0f; x < width; x += 1.0f)
         {
             float phase = (x / width) * juce::MathConstants<float>::twoPi * 2.0f; // 2 cycles
-            float y = centerY - std::sin (phase) * (height * 0.4f);
+            float y = centerY;
+
+            if (waveType == 0) // Sine
+            {
+                y -= std::sin (phase) * (height * 0.4f);
+            }
+            else if (waveType == 1) // Triangle
+            {
+                float normalizedPhase = phase / juce::MathConstants<float>::twoPi;
+                float tri = (float) (2.0 * std::abs (2.0 * (normalizedPhase - std::floor (normalizedPhase + 0.5))) - 1.0);
+                y -= tri * (height * 0.4f);
+            }
+            else if (waveType == 2) // Square
+            {
+                float sq = std::sin (phase) < 0.0f ? -1.0f : 1.0f;
+                y -= sq * (height * 0.4f);
+            }
+
             p.lineTo (x, y);
         }
 

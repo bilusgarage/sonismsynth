@@ -42,6 +42,18 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     osc1MixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "OSC1MIX", osc1MixSlider);
     osc2MixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "OSC2MIX", osc2MixSlider);
 
+    waveform1Selector.onChange = [this] {
+        waveform1Display.waveType = waveform1Selector.getSelectedId() - 1;
+        waveform1Display.repaint();
+    };
+    waveform1Selector.onChange(); // Initialize the shape
+
+    waveform2Selector.onChange = [this] {
+        waveform2Display.waveType = waveform2Selector.getSelectedId() - 1;
+        waveform2Display.repaint();
+    };
+    waveform2Selector.onChange(); // Initialize the shape
+
     // // this chunk of code instantiates and opens the melatonin inspector
     if (!inspector)
     {
