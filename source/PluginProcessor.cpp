@@ -3,19 +3,19 @@
 
 //==============================================================================
 PluginProcessor::PluginProcessor()
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       )
+    : AudioProcessor (BusesProperties()
+#if !JucePlugin_IsMidiEffect
+    #if !JucePlugin_IsSynth
+              .withInput ("Input", juce::AudioChannelSet::stereo(), true)
+    #endif
+              .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+#endif
+      )
 {
     // Add 8 voices to our synth for polyphony
     for (int i = 0; i < 8; ++i)
         synth.addVoice (new SineWaveVoice());
-        
+
     // Add the sound that the voices can play
     synth.addSound (new SineWaveSound());
 }
@@ -32,29 +32,29 @@ const juce::String PluginProcessor::getName() const
 
 bool PluginProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool PluginProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool PluginProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -64,8 +64,8 @@ double PluginProcessor::getTailLengthSeconds() const
 
 int PluginProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1; // NB: some hosts don't cope very well if you tell them there are 0 programs,
+    // so this should be at least 1, even if you're not really implementing programs.
 }
 
 int PluginProcessor::getCurrentProgram()
@@ -106,33 +106,33 @@ void PluginProcessor::releaseResources()
 
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
     return true;
-  #else
+#else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
+    #if !JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
-   #endif
+    #endif
 
     return true;
-  #endif
+#endif
 }
 
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                              juce::MidiBuffer& midiMessages)
+    juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // Since we are synthesizing audio, we must clear all output channels so that 
+    // Since we are synthesizing audio, we must clear all output channels so that
     // incoming audio (if any) doesn't interfere with our synthesized sound.
     for (auto i = 0; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
@@ -140,7 +140,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Process the keyboard state to generate midi messages from our UI
     keyboardState.processNextMidiBuffer (midiMessages, 0, buffer.getNumSamples(), true);
 
-    // The synth processes the incoming midi messages and renders audio directly 
+    // The synth processes the incoming midi messages and renders audio directly
     // into the buffer we provide.
     synth.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
 }

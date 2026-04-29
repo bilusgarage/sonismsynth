@@ -32,3 +32,6 @@ cmake-build-relwithdebinfo
 build/
 Build/
 packaging/Output/*
+
+# cache data
+.cache/

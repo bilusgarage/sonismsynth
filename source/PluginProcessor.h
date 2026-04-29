@@ -3,15 +3,15 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #if (MSVC)
-#include "ipps.h"
+    #include "ipps.h"
 #endif
 
 //==============================================================================
 class SineWaveSound : public juce::SynthesiserSound
 {
 public:
-    bool appliesToNote (int /*midiNoteNumber*/) override    { return true; }
-    bool appliesToChannel (int /*midiChannel*/) override    { return true; }
+    bool appliesToNote (int /*midiNoteNumber*/) override { return true; }
+    bool appliesToChannel (int /*midiChannel*/) override { return true; }
 };
 
 //==============================================================================
@@ -23,8 +23,7 @@ public:
         return dynamic_cast<SineWaveSound*> (sound) != nullptr;
     }
 
-    void startNote (int midiNoteNumber, float velocity,
-                    juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override
+    void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override
     {
         currentAngle = 0.0;
         level = velocity * 0.15;
@@ -50,12 +49,12 @@ public:
         }
     }
 
-    void pitchWheelMoved (int /*newValue*/) override                              {}
-    void controllerMoved (int /*controllerNumber*/, int /*newValue*/) override    {}
+    void pitchWheelMoved (int /*newValue*/) override {}
+    void controllerMoved (int /*controllerNumber*/, int /*newValue*/) override {}
 
     void renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) override
     {
-        if (! juce::approximatelyEqual (angleDelta, 0.0))
+        if (!juce::approximatelyEqual (angleDelta, 0.0))
         {
             while (--numSamples >= 0)
             {
@@ -66,10 +65,16 @@ public:
 
                 currentAngle += angleDelta;
                 ++startSample;
-                
-                if (tailOff > 0.0) {
+
+                if (tailOff > 0.0)
+                {
                     tailOff *= 0.99;
-                    if (tailOff <= 0.005) { clearCurrentNote(); angleDelta = 0.0; break; }
+                    if (tailOff <= 0.005)
+                    {
+                        clearCurrentNote();
+                        angleDelta = 0.0;
+                        break;
+                    }
                 }
             }
         }
