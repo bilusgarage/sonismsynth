@@ -40,7 +40,7 @@ public:
 };
 
 //==============================================================================
-class PluginEditor : public juce::AudioProcessorEditor
+class PluginEditor : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
     explicit PluginEditor (PluginProcessor&);
@@ -50,22 +50,31 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void visibilityChanged() override;
+    void timerCallback() override;
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     PluginProcessor& processorRef;
     std::unique_ptr<melatonin::Inspector> inspector;
+
+    juce::AudioVisualiserComponent outputVisualiser { 2 };
+    juce::AudioBuffer<float> tempScopeBuffer;
+
     juce::MidiKeyboardComponent keyboardComponent;
     juce::GroupComponent osc1Group;
     WaveformDisplayComponent waveform1Display;
     juce::ComboBox waveform1Selector;
+    juce::Slider osc1MixSlider;
     juce::GroupComponent osc2Group;
     WaveformDisplayComponent waveform2Display;
     juce::ComboBox waveform2Selector;
+    juce::Slider osc2MixSlider;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> osc1WaveAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> osc2WaveAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> osc1MixAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> osc2MixAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

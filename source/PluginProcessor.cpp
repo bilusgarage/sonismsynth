@@ -31,6 +31,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     juce::StringArray waveTypes = { "Sine", "Triangle", "Square" };
     layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC1WAVETYPE", "Osc 1 Wave Type", waveTypes, 0));
     layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC2WAVETYPE", "Osc 2 Wave Type", waveTypes, 0));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC1MIX", "Osc 1 Mix", 0.0f, 1.0f, 1.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC2MIX", "Osc 2 Mix", 0.0f, 1.0f, 0.0f));
     return layout;
 }
 
@@ -149,11 +151,16 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // Update voice parameters from APVTS
     auto osc1WaveType = apvts.getRawParameterValue ("OSC1WAVETYPE")->load();
+    auto osc2WaveType = apvts.getRawParameterValue ("OSC2WAVETYPE")->load();
+    auto osc1Mix = apvts.getRawParameterValue ("OSC1MIX")->load();
+    auto osc2Mix = apvts.getRawParameterValue ("OSC2MIX")->load();
+
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
         if (auto voice = dynamic_cast<SynthVoice*> (synth.getVoice (i)))
         {
-            voice->setWaveform (static_cast<int> (osc1WaveType));
+            voice->setOsc1Parameters (static_cast<int> (osc1WaveType), osc1Mix);
+            voice->setOsc2Parameters (static_cast<int> (osc2WaveType), osc2Mix);
         }
     }
 

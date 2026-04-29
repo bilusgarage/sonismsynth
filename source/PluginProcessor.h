@@ -7,6 +7,59 @@
 #endif
 
 //==============================================================================
+template <typename Type>
+class AudioBufferFifo
+{
+public:
+    AudioBufferFifo (int capacityInSamples) : fifo (capacityInSamples) {}
+
+    void prepare (int numChannels)
+    {
+        buffer.setSize (numChannels, fifo.getTotalSize(), false, true, true);
+        buffer.clear();
+        fifo.reset();
+    }
+
+    void push (const juce::AudioBuffer<Type>& data)
+    {
+        int start1, size1, start2, size2;
+        fifo.prepareToWrite (data.getNumSamples(), start1, size1, start2, size2);
+
+        if (size1 > 0)
+            for (int ch = 0; ch < std::min (buffer.getNumChannels(), data.getNumChannels()); ++ch)
+                buffer.copyFrom (ch, start1, data, ch, 0, size1);
+
+        if (size2 > 0)
+            for (int ch = 0; ch < std::min (buffer.getNumChannels(), data.getNumChannels()); ++ch)
+                buffer.copyFrom (ch, start2, data, ch, size1, size2);
+
+        fifo.finishedWrite (size1 + size2);
+    }
+
+    void pop (juce::AudioBuffer<Type>& data)
+    {
+        int start1, size1, start2, size2;
+        fifo.prepareToRead (data.getNumSamples(), start1, size1, start2, size2);
+
+        if (size1 > 0)
+            for (int ch = 0; ch < std::min (buffer.getNumChannels(), data.getNumChannels()); ++ch)
+                data.copyFrom (ch, 0, buffer, ch, start1, size1);
+
+        if (size2 > 0)
+            for (int ch = 0; ch < std::min (buffer.getNumChannels(), data.getNumChannels()); ++ch)
+                data.copyFrom (ch, size1, buffer, ch, start2, size2);
+
+        fifo.finishedRead (size1 + size2);
+    }
+
+    int getNumReady() const { return fifo.getNumReady(); }
+
+private:
+    juce::AbstractFifo fifo;
+    juce::AudioBuffer<Type> buffer;
+};
+
+//==============================================================================
 class SynthSound : public juce::SynthesiserSound
 {
 public:
@@ -23,7 +76,17 @@ public:
         return dynamic_cast<SynthSound*> (sound) != nullptr;
     }
 
-    void setWaveform (int type) { waveformType = type; }
+    void setOsc1Parameters (int type, float mix)
+    {
+        waveformType1 = type;
+        mix1 = mix;
+    }
+
+    void setOsc2Parameters (int type, float mix)
+    {
+        waveformType2 = type;
+        mix2 = mix;
+    }
 
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override
     {
@@ -60,18 +123,30 @@ public:
         {
             while (--numSamples >= 0)
             {
-                float sampleValue = 0.0f;
-                if (waveformType == 0) // Sine
-                    sampleValue = (float) std::sin (currentAngle);
-                else if (waveformType == 1) // Triangle
+                float sampleValue1 = 0.0f;
+                if (waveformType1 == 0) // Sine
+                    sampleValue1 = (float) std::sin (currentAngle);
+                else if (waveformType1 == 1) // Triangle
                 {
                     auto phase = currentAngle / juce::MathConstants<double>::twoPi;
-                    sampleValue = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
+                    sampleValue1 = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
                 }
-                else if (waveformType == 2) // Square
-                    sampleValue = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
+                else if (waveformType1 == 2) // Square
+                    sampleValue1 = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
 
-                auto currentSample = (float) (sampleValue * level * (tailOff > 0.0 ? tailOff : 1.0f));
+                float sampleValue2 = 0.0f;
+                if (waveformType2 == 0) // Sine
+                    sampleValue2 = (float) std::sin (currentAngle);
+                else if (waveformType2 == 1) // Triangle
+                {
+                    auto phase = currentAngle / juce::MathConstants<double>::twoPi;
+                    sampleValue2 = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
+                }
+                else if (waveformType2 == 2) // Square
+                    sampleValue2 = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
+
+                float mixedSample = (sampleValue1 * mix1) + (sampleValue2 * mix2);
+                auto currentSample = (float) (mixedSample * level * (tailOff > 0.0 ? tailOff : 1.0f));
 
                 for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
                     outputBuffer.addSample (i, startSample, currentSample);
@@ -95,7 +170,8 @@ public:
 
 private:
     double currentAngle = 0.0, angleDelta = 0.0, level = 0.0, tailOff = 0.0;
-    int waveformType = 0; // 0: sine, 1: triangle, 2: square
+    int waveformType1 = 0, waveformType2 = 0; // 0: sine, 1: triangle, 2: square
+    float mix1 = 1.0f, mix2 = 0.0f;
 };
 
 //==============================================================================
@@ -133,6 +209,8 @@ public:
 
     juce::MidiKeyboardState keyboardState;
     juce::AudioProcessorValueTreeState apvts;
+
+    AudioBufferFifo<float> scopeFifo { 48000 };
 
 private:
     juce::Synthesiser synth;
