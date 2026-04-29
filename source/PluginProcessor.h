@@ -7,7 +7,7 @@
 #endif
 
 //==============================================================================
-class SineWaveSound : public juce::SynthesiserSound
+class SynthSound : public juce::SynthesiserSound
 {
 public:
     bool appliesToNote (int /*midiNoteNumber*/) override { return true; }
@@ -15,13 +15,15 @@ public:
 };
 
 //==============================================================================
-class SineWaveVoice : public juce::SynthesiserVoice
+class SynthVoice : public juce::SynthesiserVoice
 {
 public:
     bool canPlaySound (juce::SynthesiserSound* sound) override
     {
-        return dynamic_cast<SineWaveSound*> (sound) != nullptr;
+        return dynamic_cast<SynthSound*> (sound) != nullptr;
     }
+
+    void setWaveform (int type) { waveformType = type; }
 
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override
     {
@@ -58,7 +60,18 @@ public:
         {
             while (--numSamples >= 0)
             {
-                auto currentSample = (float) (std::sin (currentAngle) * level * (tailOff > 0.0 ? tailOff : 1.0f));
+                float sampleValue = 0.0f;
+                if (waveformType == 0) // Sine
+                    sampleValue = (float) std::sin (currentAngle);
+                else if (waveformType == 1) // Triangle
+                {
+                    auto phase = currentAngle / juce::MathConstants<double>::twoPi;
+                    sampleValue = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
+                }
+                else if (waveformType == 2) // Square
+                    sampleValue = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
+
+                auto currentSample = (float) (sampleValue * level * (tailOff > 0.0 ? tailOff : 1.0f));
 
                 for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
                     outputBuffer.addSample (i, startSample, currentSample);
@@ -82,6 +95,7 @@ public:
 
 private:
     double currentAngle = 0.0, angleDelta = 0.0, level = 0.0, tailOff = 0.0;
+    int waveformType = 0; // 0: sine, 1: triangle, 2: square
 };
 
 //==============================================================================
@@ -118,8 +132,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     juce::MidiKeyboardState keyboardState;
+    juce::AudioProcessorValueTreeState apvts;
 
 private:
     juce::Synthesiser synth;
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

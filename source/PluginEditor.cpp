@@ -24,6 +24,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     waveform2Selector.setSelectedId (2);
     addAndMakeVisible (waveform2Selector);
 
+    osc1WaveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processorRef.apvts, "OSC1WAVETYPE", waveform1Selector);
+    osc2WaveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processorRef.apvts, "OSC2WAVETYPE", waveform2Selector);
+
     // // this chunk of code instantiates and opens the melatonin inspector
     if (!inspector)
     {

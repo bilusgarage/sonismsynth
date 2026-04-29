@@ -10,18 +10,28 @@ PluginProcessor::PluginProcessor()
     #endif
               .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
 #endif
-      )
+              ),
+      apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
     // Add 8 voices to our synth for polyphony
     for (int i = 0; i < 8; ++i)
-        synth.addVoice (new SineWaveVoice());
+        synth.addVoice (new SynthVoice());
 
     // Add the sound that the voices can play
-    synth.addSound (new SineWaveSound());
+    synth.addSound (new SynthSound());
 }
 
 PluginProcessor::~PluginProcessor()
 {
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    juce::StringArray waveTypes = { "Sine", "Triangle", "Square" };
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC1WAVETYPE", "Osc 1 Wave Type", waveTypes, 0));
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC2WAVETYPE", "Osc 2 Wave Type", waveTypes, 0));
+    return layout;
 }
 
 //==============================================================================
@@ -136,6 +146,16 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // incoming audio (if any) doesn't interfere with our synthesized sound.
     for (auto i = 0; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+
+    // Update voice parameters from APVTS
+    auto osc1WaveType = apvts.getRawParameterValue ("OSC1WAVETYPE")->load();
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+    {
+        if (auto voice = dynamic_cast<SynthVoice*> (synth.getVoice (i)))
+        {
+            voice->setWaveform (static_cast<int> (osc1WaveType));
+        }
+    }
 
     // Process the keyboard state to generate midi messages from our UI
     keyboardState.processNextMidiBuffer (midiMessages, 0, buffer.getNumSamples(), true);
