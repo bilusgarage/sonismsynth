@@ -10,52 +10,60 @@
 class WaveformDisplayComponent : public juce::Component
 {
 public:
-    WaveformDisplayComponent() {}
+    WaveformDisplayComponent()
+    {
+        samples.resize (512, 0.0f);
+    }
 
-    int waveType = 0; // 0: Sine, 1: Triangle, 2: Square
+    void pushBuffer (const juce::AudioBuffer<float>& buffer)
+    {
+        if (buffer.getNumChannels() == 0)
+            return;
+
+        auto* channelData = buffer.getReadPointer (0);
+
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            samples[(size_t) writePosition] = juce::jlimit (-1.0f, 1.0f, channelData[i] * displayGain);
+            writePosition = (writePosition + 1) % (int) samples.size();
+        }
+
+        repaint();
+    }
 
     void paint (juce::Graphics& g) override
     {
         auto bounds = getLocalBounds().toFloat();
 
-        // Draw the background of the box
         g.setColour (juce::Colours::black);
         g.fillRect (bounds);
 
-        // Draw the waveform
+        g.setColour (juce::Colours::darkgrey);
+        auto centerY = bounds.getCentreY();
+        g.drawHorizontalLine (juce::roundToInt (centerY), bounds.getX(), bounds.getRight());
+
         g.setColour (juce::Colours::cyan);
         juce::Path p;
-        auto width = bounds.getWidth();
-        auto height = bounds.getHeight();
-        auto centerY = height / 2.0f;
 
-        p.startNewSubPath (0.0f, centerY);
-        for (float x = 0.0f; x < width; x += 1.0f)
+        for (size_t i = 0; i < samples.size(); ++i)
         {
-            float phase = (x / width) * juce::MathConstants<float>::twoPi * 2.0f; // 2 cycles
-            float y = centerY;
+            auto sampleIndex = ((size_t) writePosition + i) % samples.size();
+            auto x = juce::jmap ((float) i, 0.0f, (float) samples.size() - 1.0f, bounds.getX(), bounds.getRight());
+            auto y = centerY - (samples[sampleIndex] * bounds.getHeight() * 0.45f);
 
-            if (waveType == 0) // Sine
-            {
-                y -= std::sin (phase) * (height * 0.4f);
-            }
-            else if (waveType == 1) // Triangle
-            {
-                float normalizedPhase = phase / juce::MathConstants<float>::twoPi;
-                float tri = (float) (2.0 * std::abs (2.0 * (normalizedPhase - std::floor (normalizedPhase + 0.5))) - 1.0);
-                y -= tri * (height * 0.4f);
-            }
-            else if (waveType == 2) // Square
-            {
-                float sq = std::sin (phase) < 0.0f ? -1.0f : 1.0f;
-                y -= sq * (height * 0.4f);
-            }
-
-            p.lineTo (x, y);
+            if (i == 0)
+                p.startNewSubPath (x, y);
+            else
+                p.lineTo (x, y);
         }
 
         g.strokePath (p, juce::PathStrokeType (2.0f));
     }
+
+private:
+    std::vector<float> samples;
+    int writePosition = 0;
+    float displayGain = 1.0f;
 };
 
 //==============================================================================
@@ -77,7 +85,7 @@ private:
     PluginProcessor& processorRef;
     std::unique_ptr<melatonin::Inspector> inspector;
 
-    juce::AudioVisualiserComponent outputVisualiser { 2 };
+    juce::AudioVisualiserComponent outputVisualiser { 1 };
     juce::AudioBuffer<float> tempScopeBuffer;
 
     juce::MidiKeyboardComponent keyboardComponent;

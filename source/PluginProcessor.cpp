@@ -108,6 +108,11 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     // initialisation that you need..
     juce::ignoreUnused (samplesPerBlock);
     synth.setCurrentPlaybackSampleRate (sampleRate);
+    scopeFifo.prepare (juce::jmax (1, getTotalNumOutputChannels()));
+    osc1ScopeFifo.prepare (1);
+    osc2ScopeFifo.prepare (1);
+    osc1ScopeBuffer.setSize (1, samplesPerBlock);
+    osc2ScopeBuffer.setSize (1, samplesPerBlock);
 }
 
 void PluginProcessor::releaseResources()
@@ -169,7 +174,24 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // The synth processes the incoming midi messages and renders audio directly
     // into the buffer we provide.
+    osc1ScopeBuffer.setSize (1, buffer.getNumSamples(), false, false, true);
+    osc2ScopeBuffer.setSize (1, buffer.getNumSamples(), false, false, true);
+    osc1ScopeBuffer.clear();
+    osc2ScopeBuffer.clear();
+
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+        if (auto voice = dynamic_cast<SynthVoice*> (synth.getVoice (i)))
+            voice->setScopeBuffers (&osc1ScopeBuffer, &osc2ScopeBuffer);
+
     synth.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
+
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+        if (auto voice = dynamic_cast<SynthVoice*> (synth.getVoice (i)))
+            voice->setScopeBuffers (nullptr, nullptr);
+
+    scopeFifo.push (buffer);
+    osc1ScopeFifo.push (osc1ScopeBuffer);
+    osc2ScopeFifo.push (osc2ScopeBuffer);
 }
 
 //==============================================================================

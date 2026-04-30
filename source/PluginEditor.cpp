@@ -42,18 +42,6 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     osc1MixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "OSC1MIX", osc1MixSlider);
     osc2MixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "OSC2MIX", osc2MixSlider);
 
-    waveform1Selector.onChange = [this] {
-        waveform1Display.waveType = waveform1Selector.getSelectedId() - 1;
-        waveform1Display.repaint();
-    };
-    waveform1Selector.onChange(); // Initialize the shape
-
-    waveform2Selector.onChange = [this] {
-        waveform2Display.waveType = waveform2Selector.getSelectedId() - 1;
-        waveform2Display.repaint();
-    };
-    waveform2Selector.onChange(); // Initialize the shape
-
     // // this chunk of code instantiates and opens the melatonin inspector
     if (!inspector)
     {
@@ -67,7 +55,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (400, 400);
+    setSize (800, 400);
 }
 
 PluginEditor::~PluginEditor()
@@ -82,13 +70,36 @@ void PluginEditor::visibilityChanged()
 
 void PluginEditor::timerCallback()
 {
-    auto numReady = processorRef.scopeFifo.getNumReady();
-    if (numReady > 0)
+    auto readScopeBuffer = [this] (AudioBufferFifo<float>& fifo, int numChannels) -> bool
     {
-        tempScopeBuffer.setSize (processorRef.getTotalNumOutputChannels(), numReady);
-        processorRef.scopeFifo.pop (tempScopeBuffer);
+        auto numReady = fifo.getNumReady();
+        if (numReady <= 0)
+            return false;
+
+        tempScopeBuffer.setSize (numChannels, numReady);
+        fifo.pop (tempScopeBuffer);
+
+        constexpr auto scopeDisplayGain = 4.0f;
+        tempScopeBuffer.applyGain (scopeDisplayGain);
+
+        for (auto channel = 0; channel < tempScopeBuffer.getNumChannels(); ++channel)
+            juce::FloatVectorOperations::clip (tempScopeBuffer.getWritePointer (channel),
+                tempScopeBuffer.getReadPointer (channel),
+                -1.0f,
+                1.0f,
+                tempScopeBuffer.getNumSamples());
+
+        return true;
+    };
+
+    if (readScopeBuffer (processorRef.scopeFifo, processorRef.getTotalNumOutputChannels()))
         outputVisualiser.pushBuffer (tempScopeBuffer);
-    }
+
+    if (readScopeBuffer (processorRef.osc1ScopeFifo, 1))
+        waveform1Display.pushBuffer (tempScopeBuffer);
+
+    if (readScopeBuffer (processorRef.osc2ScopeFifo, 1))
+        waveform2Display.pushBuffer (tempScopeBuffer);
 }
 
 void PluginEditor::paint (juce::Graphics& g)
@@ -108,7 +119,7 @@ void PluginEditor::resized()
 
     auto oscArea = area.removeFromBottom (120);
 
-    outputVisualiser.setBounds (area.reduced (10));
+    outputVisualiser.setBounds (area.removeFromTop (128));
 
     auto osc1Area = oscArea.removeFromLeft (oscArea.getWidth() / 2).reduced (10);
     osc1Group.setBounds (osc1Area);
