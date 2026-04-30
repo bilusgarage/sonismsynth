@@ -28,7 +28,7 @@ PluginProcessor::~PluginProcessor()
 juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    juce::StringArray waveTypes = { "Sine", "Triangle", "Square" };
+    juce::StringArray waveTypes = { "Sine", "Triangle", "Square", "Sawtooth", "Pulse" };
     layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC1WAVETYPE", "Osc 1 Wave Type", waveTypes, 0));
     layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC2WAVETYPE", "Osc 2 Wave Type", waveTypes, 0));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC1MIX", "Osc 1 Mix", 0.0f, 1.0f, 1.0f));

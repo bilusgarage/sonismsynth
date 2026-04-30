@@ -17,6 +17,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     waveform1Selector.addItem ("Sine", 1);
     waveform1Selector.addItem ("Triangle", 2);
     waveform1Selector.addItem ("Square", 3);
+    waveform1Selector.addItem ("Sawtooth", 4);
+    waveform1Selector.addItem ("Pulse", 5);
     waveform1Selector.setSelectedId (1);
     addAndMakeVisible (waveform1Selector);
 
@@ -30,6 +32,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     waveform2Selector.addItem ("Sine", 1);
     waveform2Selector.addItem ("Triangle", 2);
     waveform2Selector.addItem ("Square", 3);
+    waveform2Selector.addItem ("Sawtooth", 4);
+    waveform2Selector.addItem ("Pulse", 5);
     waveform2Selector.setSelectedId (2);
     addAndMakeVisible (waveform2Selector);
 
@@ -70,8 +74,7 @@ void PluginEditor::visibilityChanged()
 
 void PluginEditor::timerCallback()
 {
-    auto readScopeBuffer = [this] (AudioBufferFifo<float>& fifo, int numChannels) -> bool
-    {
+    auto readScopeBuffer = [this] (AudioBufferFifo<float>& fifo, int numChannels) -> bool {
         auto numReady = fifo.getNumReady();
         if (numReady <= 0)
             return false;

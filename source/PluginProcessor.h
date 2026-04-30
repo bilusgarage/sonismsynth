@@ -129,27 +129,8 @@ public:
         {
             while (--numSamples >= 0)
             {
-                float sampleValue1 = 0.0f;
-                if (waveformType1 == 0) // Sine
-                    sampleValue1 = (float) std::sin (currentAngle);
-                else if (waveformType1 == 1) // Triangle
-                {
-                    auto phase = currentAngle / juce::MathConstants<double>::twoPi;
-                    sampleValue1 = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
-                }
-                else if (waveformType1 == 2) // Square
-                    sampleValue1 = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
-
-                float sampleValue2 = 0.0f;
-                if (waveformType2 == 0) // Sine
-                    sampleValue2 = (float) std::sin (currentAngle);
-                else if (waveformType2 == 1) // Triangle
-                {
-                    auto phase = currentAngle / juce::MathConstants<double>::twoPi;
-                    sampleValue2 = (float) (2.0 * std::abs (2.0 * (phase - std::floor (phase + 0.5))) - 1.0);
-                }
-                else if (waveformType2 == 2) // Square
-                    sampleValue2 = std::sin (currentAngle) < 0.0 ? -1.0f : 1.0f;
+                auto sampleValue1 = getWaveformSample (waveformType1, currentAngle);
+                auto sampleValue2 = getWaveformSample (waveformType2, currentAngle);
 
                 float mixedSample = (sampleValue1 * mix1) + (sampleValue2 * mix2);
                 auto envelope = (float) (level * (tailOff > 0.0 ? tailOff : 1.0f));
@@ -184,8 +165,31 @@ public:
     }
 
 private:
+    static float getWaveformSample (int waveformType, double angle)
+    {
+        auto phase = angle / juce::MathConstants<double>::twoPi;
+        auto normalisedPhase = phase - std::floor (phase);
+
+        if (waveformType == 0) // Sine
+            return (float) std::sin (angle);
+
+        if (waveformType == 1) // Triangle
+            return (float) (2.0 * std::abs (2.0 * (normalisedPhase - 0.5)) - 1.0);
+
+        if (waveformType == 2) // Square
+            return normalisedPhase < 0.5 ? 1.0f : -1.0f;
+
+        if (waveformType == 3) // Sawtooth
+            return (float) ((normalisedPhase * 2.0) - 1.0);
+
+        if (waveformType == 4) // Pulse
+            return normalisedPhase < 0.25 ? 1.0f : -1.0f;
+
+        return 0.0f;
+    }
+
     double currentAngle = 0.0, angleDelta = 0.0, level = 0.0, tailOff = 0.0;
-    int waveformType1 = 0, waveformType2 = 0; // 0: sine, 1: triangle, 2: square
+    int waveformType1 = 0, waveformType2 = 0; // 0: sine, 1: triangle, 2: square, 3: sawtooth, 4: pulse
     float mix1 = 1.0f, mix2 = 0.0f;
     juce::AudioBuffer<float>* osc1ScopeBuffer = nullptr;
     juce::AudioBuffer<float>* osc2ScopeBuffer = nullptr;
