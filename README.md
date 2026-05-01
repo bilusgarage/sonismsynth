@@ -1,4 +1,4 @@
-# Sonism Synth
+# Sonism
 
 Sonism is a simple, modern, versatile software synthesizer plugin built using the JUCE framework. It features an intuitive dual-oscillator architecture with real-time waveform and spectrum visualization.
 
@@ -33,8 +33,8 @@ Sonism Synth is built upon the awesome [Pamplejuce](https://github.com/sudara/pa
 
 1. **Clone the repository and submodules**:
    ```bash
-   git clone https://github.com/bilusgarage/sonismsynth sonismsynth
-   cd sonismsynth
+   git clone https://github.com/bilusgarage/sonism sonism
+   cd sonism
    git submodule update --init --recursive
    ```
 
