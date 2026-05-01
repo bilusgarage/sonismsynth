@@ -50,7 +50,3 @@ Sonism Synth is built upon the awesome [Pamplejuce](https://github.com/sudara/pa
 3. **Install / Run**:
    - The standalone application and plugin binaries (VST3, AU, CLAP) will be located in `build/sonismsynth_artefacts/Release/`.
    - On macOS, plugins are automatically copied to your `~/Library/Audio/Plug-Ins/` folder during the build process.
-
-## License
-
-*(Add license information here)*
