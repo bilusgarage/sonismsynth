@@ -242,11 +242,14 @@ void PluginEditor::resized()
 
     auto oscContent = oscArea.withTop (oscArea.getY() + 24).reduced (10);
 
-    // Detune + Pan knobs at bottom
-    auto detuneBounds = oscContent.removeFromBottom (90);
-    auto detuneSliderBounds = detuneBounds.withSizeKeepingCentre (140, 70).withTrimmedTop (15);
-    auto detuneLeft = detuneSliderBounds.removeFromLeft (70);
-    auto detuneRight = detuneSliderBounds;
+    // Bottom controls row: wave selector + mix on left, detune + pan knobs on right
+    auto controlsRow = oscContent.removeFromBottom (90);
+
+    // Right side of controls row: Detune + Pan knobs
+    auto knobsArea = controlsRow.removeFromRight (140);
+    auto knobsBounds = knobsArea.withSizeKeepingCentre (140, 70).withTrimmedTop (15);
+    auto detuneLeft = knobsBounds.removeFromLeft (70);
+    auto detuneRight = knobsBounds;
 
     // OSC 1: only Pan
     oscPanSliders[0].setBounds (detuneRight);
@@ -258,19 +261,19 @@ void PluginEditor::resized()
         oscPanSliders[i].setBounds (detuneRight);
     }
 
-    // Wave selector + mix slider (right strip)
-    auto oscControls = oscContent.removeFromRight (100);
+    // Left side of controls row: Wave selector + Mix slider
+    auto leftControls = controlsRow.withTrimmedTop (15);
 
-    auto selectorBounds = oscControls.removeFromTop (24);
+    auto selectorBounds = leftControls.removeFromTop (24);
     for (auto& sel : waveformSelectors)
         sel.setBounds (selectorBounds);
 
-    auto mixBounds = oscControls.removeFromTop (24).withTrimmedTop (4);
+    auto mixBounds = leftControls.removeFromTop (24).withTrimmedTop (4);
     for (auto& mix : oscMixSliders)
         mix.setBounds (mixBounds);
 
-    // Waveform display fills remaining space
-    auto displayBounds = oscContent.withTrimmedRight (10);
+    // Waveform display fills remaining space above the controls
+    auto displayBounds = oscContent;
     for (auto& display : waveformDisplays)
         display.setBounds (displayBounds);
 

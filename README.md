@@ -1,52 +1,88 @@
 # Sonism
 
-Sonism is a simple, modern, versatile software synthesizer plugin built using the JUCE framework. It features an intuitive dual-oscillator architecture with real-time waveform and spectrum visualization.
+Sonism is a modern **Supersaw synthesizer plugin** built with the JUCE framework. It features a 7-oscillator engine with independent detuning and stereo panning per oscillator, a state-variable filter, an amplitude envelope, and real-time waveform and spectrum visualization.
 
 ## Features
 
-- **Dual Oscillators**: Two independent oscillators (OSC 1 and OSC 2) with mix controls.
-- **Selectable Waveforms**: Choose between Sine, Triangle, Square, Sawtooth, and Pulse waves for each oscillator.
-- **Real-Time Visualizations**:
-  - Individual waveform displays for each oscillator.
-  - A comprehensive output spectrum analyzer.
-- **Multiple Plugin Formats**: Built for Standalone, AU, VST3, AUv3, and CLAP.
-- **Modern UI**: Designed with JUCE's powerful UI components and debuggable via the included Melatonin Inspector.
+### Oscillator Engine
+- **7 Independent Oscillators**
+- **5 Waveform Types** per oscillator — Sine, Triangle, Square, Sawtooth, Pulse.
+- **Per-Oscillator Mix** — linear mix slider to blend each oscillator into the final output.
+- **Detune** (OSC 2–7) — ±100 cents of independent pitch offset per oscillator, enabling fat supersaw stacks.
+- **Pan** (all OSCs) — constant-power stereo panning per oscillator for wide stereo spread.
+
+### Filter
+- **State-Variable Low-Pass Filter** with:
+  - **Cutoff** — 20 Hz to 20 kHz (skewed for musical response).
+  - **Resonance** — 0.1 to 5.0 Q factor.
+
+### Amplitude Envelope (ADSR)
+- **Attack**, **Decay**, **Sustain**, **Release** — shared across all voices.
+
+### Visualization
+- **Per-Oscillator Waveform Display** — real-time oscilloscope showing the summed stereo output of the active oscillator.
+- **Output Spectrum Analyzer** — FFT-based frequency display of the final stereo mix.
+
+### Polyphony & Format
+- **4-voice polyphony** (configurable in source).
+- **Multiple Plugin Formats**: Standalone, AU, VST3, AUv3, CLAP.
+
+---
 
 ## Technical Details
 
-Sonism Synth is built upon the awesome [Pamplejuce](https://github.com/sudara/pamplejuce), utilizing modern C++20 and CMake for a streamlined build process.
+Sonism is built on top of [Pamplejuce](https://github.com/sudara/pamplejuce), leveraging modern C++20 and CMake.
 
-- **Framework**: [JUCE 8](https://juce.com/)
-- **Build System**: CMake (v3.25+)
-- **Testing**: Includes unit tests and benchmarks using [Catch2](https://github.com/catchorg/Catch2).
-- **DSP**: Leverages JUCE DSP modules (e.g., FFT, Windowing) and optionally Intel IPP for performance.
+| | |
+|---|---|
+| **Framework** | [JUCE 8](https://juce.com/) |
+| **Build System** | CMake 3.25+ |
+| **Testing** | [Catch2](https://github.com/catchorg/Catch2) — unit tests & benchmarks |
+| **DSP** | JUCE DSP modules (FFT, Windowing, StateVariableTPTFilter) |
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- CMake (3.25 or newer)
-- A modern C++ compiler (Clang/Apple Clang, GCC, or MSVC)
+- CMake 3.25 or newer
+- Apple Clang, GCC, or MSVC (C++20 support required)
 - Git
 
-### Building the Project
+### Building
 
-1. **Clone the repository and submodules**:
-   ```bash
-   git clone https://github.com/bilusgarage/sonism sonism
-   cd sonism
-   git submodule update --init --recursive
-   ```
+```bash
+# Clone with submodules
+git clone https://github.com/bilusgarage/sonismsynth sonism
+cd sonism
+git submodule update --init --recursive
 
-2. **Configure and build using CMake**:
-   ```bash
-   # Generate build files
-   cmake -B build -DCMAKE_BUILD_TYPE=Release
+# Configure
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-   # Build the project
-   cmake --build build --config Release
-   ```
+# Build
+cmake --build build --config Release
+```
 
-3. **Install / Run**:
-   - The standalone application and plugin binaries (VST3, AU, CLAP) will be located in `build/sonismsynth_artefacts/Release/`.
-   - On macOS, plugins are automatically copied to your `~/Library/Audio/Plug-Ins/` folder during the build process.
+Binaries are written to `build/sonismsynth_artefacts/Release/`. On macOS, AU and VST3 plugins are automatically copied to `~/Library/Audio/Plug-Ins/`.
+
+### Running (Debug)
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+./build/sonismsynth_artefacts/Debug/Standalone/Sonism.app/Contents/MacOS/Sonism
+```
+
+---
+
+## Supersaw Tips
+
+For the classic Roland JP-8000 Supersaw sound:
+
+1. Enable **OSC 1–7**, all set to **Sawtooth**.
+2. Set **OSC 1 Mix** to ~0.7, OSC 2–7 Mix to ~0.5.
+3. **Detune** OSC 2–7 symmetrically: e.g., OSC 2 = +7, OSC 3 = −7, OSC 4 = +5, OSC 5 = −5, OSC 6 = +4, OSC 7 = −4 cents.
+4. **Pan** the oscillators outward: OSC 2 left, OSC 3 right, etc.
+5. Add a gentle filter sweep with a slow **Attack** for a pad sound.
