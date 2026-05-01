@@ -234,6 +234,7 @@ public:
     void resized() override;
     void visibilityChanged() override;
     void timerCallback() override;
+    void mouseDown (const juce::MouseEvent& e) override;
 
 private:
     void updateOscTabs();
@@ -251,6 +252,7 @@ private:
     juce::GroupComponent oscGroup;
     juce::TextButton osc1TabButton { "OSC 1" };
     juce::TextButton osc2TabButton { "OSC 2" };
+    juce::TextButton osc3TabButton { "OSC 3" };
 
     WaveformDisplayComponent waveform1Display;
     juce::ComboBox waveform1Selector;
@@ -260,16 +262,33 @@ private:
     juce::ComboBox waveform2Selector;
     juce::Slider osc2MixSlider;
 
+    WaveformDisplayComponent waveform3Display;
+    juce::ComboBox waveform3Selector;
+    juce::Slider osc3MixSlider;
+
     juce::GroupComponent filterGroup;
     juce::Slider cutoffSlider;
     juce::Slider resonanceSlider;
 
+    juce::GroupComponent ampEnvGroup;
+    juce::Slider attackSlider;
+    juce::Slider decaySlider;
+    juce::Slider sustainSlider;
+    juce::Slider releaseSlider;
+
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> osc1WaveAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> osc2WaveAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> osc3WaveAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> osc1MixAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> osc2MixAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> osc3MixAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> cutoffAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> resonanceAttachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attackAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> decayAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> sustainAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> releaseAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

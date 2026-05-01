@@ -25,7 +25,7 @@ set(PROJECT_NAME "sonismsynth")
 #   set(PROJECT_NAME "MyPlugin_v${MAJOR_VERSION}")
 # Doing so enables major versions to show up in IDEs and DAWs as separate plugins
 # allowing you to change parameters and behavior without breaking existing user projects
-set(PRODUCT_NAME "sonism")
+set(PRODUCT_NAME "Sonism")
 
 # Change me! Used for the MacOS bundle name and Installers
 set(COMPANY_NAME "bilu's garage")
