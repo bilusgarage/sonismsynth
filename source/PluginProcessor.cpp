@@ -37,23 +37,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     for (int i = 1; i <= 7; ++i)
     {
         juce::String id = juce::String (i);
-        layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC" + id + "WAVETYPE", "Osc " + id + " Wave Type", waveTypes, 3));
-        layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "MIX", "Osc " + id + " Mix", 0.0f, 1.0f, i == 1 ? 1.0f : 0.5f));
-        layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "SPREAD", "Osc " + id + " Spread", -1.0f, 1.0f, 0.0f));
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID ("OSC" + id + "WAVETYPE", 1), "Osc " + id + " Wave Type", waveTypes, 3));
+        layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("OSC" + id + "MIX", 1), "Osc " + id + " Mix", 0.0f, 1.0f, i == 1 ? 1.0f : 0.5f));
+        layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("OSC" + id + "SPREAD", 1), "Osc " + id + " Spread", -1.0f, 1.0f, 0.0f));
         if (i > 1)
-            layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "DETUNE", "Osc " + id + " Detune", -100.0f, 100.0f, 0.0f));
+            layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("OSC" + id + "DETUNE", 1), "Osc " + id + " Detune", -100.0f, 100.0f, 0.0f));
     }
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("UNISONDETUNE", "Unison Detune", juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.3f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("UNISONSPREAD", "Unison Spread", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.85f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("UNISONDETUNE", 1), "Unison Detune", juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.3f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("UNISONSPREAD", 1), "Unison Spread", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.85f));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("FILTERCUTOFF", "Cutoff", juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("FILTERRES", "Resonance", juce::NormalisableRange<float> (0.1f, 1.0f, 0.01f), 0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("FILTERCUTOFF", 1), "Cutoff", juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("FILTERRES", 1), "Resonance", juce::NormalisableRange<float> (0.1f, 1.0f, 0.01f), 0.1f));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("ATTACK", "Attack", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.100f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("DECAY", "Decay", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.100f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("SUSTAIN", "Sustain", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("RELEASE", "Release", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.700f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("ATTACK", 1), "Attack", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.100f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("DECAY", 1), "Decay", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.100f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("SUSTAIN", 1), "Sustain", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("RELEASE", 1), "Release", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.700f));
 
     // LFO 1 (Osc 2-4)
     layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID ("LFO1RATE", 1), "LFO 1 Rate", juce::NormalisableRange<float>(0.1f, 20.0f, 0.01f, 0.5f), 0.10f));

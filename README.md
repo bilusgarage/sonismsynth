@@ -1,6 +1,6 @@
 # Sonism
 
-Sonism is a modern **Supersaw synthesizer plugin** built with the JUCE framework. It features a 7-oscillator engine with independent detuning and stereo panning per oscillator, a state-variable filter, an amplitude envelope, and real-time waveform and spectrum visualization.
+Sonism is a modern **Supersaw synthesizer plugin** built with the JUCE framework. It features a 7-oscillator engine with independent detuning and stereo panning per oscillator, two independent LFOs, a state-variable filter, an amplitude envelope, and real-time waveform and spectrum visualization.
 
 ## Features
 
@@ -10,28 +10,34 @@ Sonism is a modern **Supersaw synthesizer plugin** built with the JUCE framework
 - **Per-Oscillator Mix** — linear mix slider to blend each oscillator into the final output.
 - **Detune** (OSC 2–7) — ±100 cents of independent pitch offset per oscillator, enabling fat supersaw stacks.
 - **Pan** (all OSCs) — constant-power stereo panning per oscillator for wide stereo spread.
+- **Global Unison** — Global Unison Detune and Spread controls for rapidly setting up a thick supersaw. 
 
-### Filter
+### Modulation & Envelopes
+- **LFO Section** — Two independent LFOs (LFO 2-4 and LFO 5-7) with controls for:
+  - Wave Type (Sine, Saw, Triangle)
+  - Amount
+  - Rate
+  - Phase
+- **Amplitude Envelope (ADSR)** — Attack, Decay, Sustain, Release.
+
+### Filter & Effects
 - **State-Variable Low-Pass Filter** with:
-  - **Cutoff** — 20 Hz to 20 kHz (skewed for musical response).
+  - **Cutoff** — 20 Hz to 20 kHz.
   - **Resonance** — 0.1 to 5.0 Q factor.
 
-### Amplitude Envelope (ADSR)
-- **Attack**, **Decay**, **Sustain**, **Release** — shared across all voices.
-
-### Visualization
+### UI & Visualization
 - **Per-Oscillator Waveform Display** — real-time oscilloscope showing the summed stereo output of the active oscillator.
 - **Output Spectrum Analyzer** — FFT-based frequency display of the final stereo mix.
 
 ### Polyphony & Format
-- **4-voice polyphony** (configurable in source).
+- **6-voice polyphony** (configurable in source).
 - **Multiple Plugin Formats**: Standalone, AU, VST3, AUv3, CLAP.
 
 ---
 
 ## Technical Details
 
-Sonism is built on top of [Pamplejuce](https://github.com/sudara/pamplejuce), leveraging modern C++20 and CMake.
+Sonism is built on top of the awesome [Pamplejuce](https://github.com/sudara/pamplejuce), leveraging modern C++20 and CMake.
 
 | | |
 |---|---|
@@ -74,15 +80,3 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ./build/sonismsynth_artefacts/Debug/Standalone/Sonism.app/Contents/MacOS/Sonism
 ```
-
----
-
-## Supersaw Tips
-
-For the classic Roland JP-8000 Supersaw sound:
-
-1. Enable **OSC 1–7**, all set to **Sawtooth**.
-2. Set **OSC 1 Mix** to ~0.7, OSC 2–7 Mix to ~0.5.
-3. **Detune** OSC 2–7 symmetrically: e.g., OSC 2 = +7, OSC 3 = −7, OSC 4 = +5, OSC 5 = −5, OSC 6 = +4, OSC 7 = −4 cents.
-4. **Pan** the oscillators outward: OSC 2 left, OSC 3 right, etc.
-5. Add a gentle filter sweep with a slow **Attack** for a pad sound.
