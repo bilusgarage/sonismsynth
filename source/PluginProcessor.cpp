@@ -38,7 +38,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     {
         juce::String id = juce::String (i);
         layout.add (std::make_unique<juce::AudioParameterChoice> ("OSC" + id + "WAVETYPE", "Osc " + id + " Wave Type", waveTypes, 3));
-        layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "MIX",    "Osc " + id + " Mix",    0.0f, 1.0f, i == 1 ? 1.0f : 0.0f));
+        layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "MIX", "Osc " + id + " Mix", 0.0f, 1.0f, i == 1 ? 1.0f : 0.0f));
         layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "SPREAD", "Osc " + id + " Spread", -1.0f, 1.0f, 0.0f));
         if (i > 1)
             layout.add (std::make_unique<juce::AudioParameterFloat> ("OSC" + id + "DETUNE", "Osc " + id + " Detune", -100.0f, 100.0f, 0.0f));
@@ -50,10 +50,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     layout.add (std::make_unique<juce::AudioParameterFloat> ("FILTERCUTOFF", "Cutoff", juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("FILTERRES", "Resonance", juce::NormalisableRange<float> (0.1f, 1.0f, 0.01f), 0.1f));
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("ATTACK",  "Attack",  juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.1f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("DECAY",   "Decay",   juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("ATTACK", "Attack", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("DECAY", "Decay", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.1f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("SUSTAIN", "Sustain", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("RELEASE", "Release", juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.5f), 0.1f));
+
+    // LFO 1 (Osc 2-4)
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO1RATE", "LFO 1 Rate", juce::NormalisableRange<float>(0.1f, 20.0f, 0.01f, 0.5f), 1.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO1AMOUNT", "LFO 1 Amount", 0.0f, 1.0f, 0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO1PHASE", "LFO 1 Phase", 0.0f, 1.0f, 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("LFO1WAVETYPE", "LFO 1 Wave Type", waveTypes, 0));
+
+    // LFO 2 (Osc 5-7)
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO2RATE", "LFO 2 Rate", juce::NormalisableRange<float>(0.1f, 20.0f, 0.01f, 0.5f), 1.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO2AMOUNT", "LFO 2 Amount", 0.0f, 1.0f, 0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("LFO2PHASE", "LFO 2 Phase", 0.0f, 1.0f, 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("LFO2WAVETYPE", "LFO 2 Wave Type", waveTypes, 0));
 
     return layout;
 }
@@ -203,6 +215,16 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     auto sustain = apvts.getRawParameterValue ("SUSTAIN")->load();
     auto release = apvts.getRawParameterValue ("RELEASE")->load();
 
+    float lfo1Rate = apvts.getRawParameterValue ("LFO1RATE")->load();
+    float lfo1Amount = apvts.getRawParameterValue ("LFO1AMOUNT")->load();
+    float lfo1Phase = apvts.getRawParameterValue ("LFO1PHASE")->load();
+    int lfo1Wave = static_cast<int> (apvts.getRawParameterValue ("LFO1WAVETYPE")->load());
+
+    float lfo2Rate = apvts.getRawParameterValue ("LFO2RATE")->load();
+    float lfo2Amount = apvts.getRawParameterValue ("LFO2AMOUNT")->load();
+    float lfo2Phase = apvts.getRawParameterValue ("LFO2PHASE")->load();
+    int lfo2Wave = static_cast<int> (apvts.getRawParameterValue ("LFO2WAVETYPE")->load());
+
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
         if (auto voice = dynamic_cast<SynthVoice*> (synth.getVoice (i)))
@@ -210,6 +232,8 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             for (int osc = 0; osc < 7; ++osc)
                 voice->setOscParameters (osc, static_cast<int> (oscWaveType[osc]), oscMix[osc], oscDetune[osc], oscSpread[osc]);
             voice->setAdsrParameters (attack, decay, sustain, release);
+            voice->setLfoParameters (1, lfo1Rate, lfo1Amount, lfo1Phase, lfo1Wave);
+            voice->setLfoParameters (2, lfo2Rate, lfo2Amount, lfo2Phase, lfo2Wave);
         }
     }
 

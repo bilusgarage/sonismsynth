@@ -226,6 +226,97 @@ private:
 };
 
 //==============================================================================
+class LfoDisplayComponent : public juce::Component
+{
+public:
+    LfoDisplayComponent() {}
+
+    void setParameters (int waveform, float phase, float amount)
+    {
+        currentWaveform = waveform;
+        currentPhase = phase;
+        currentAmount = amount;
+        repaint();
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto bounds = getLocalBounds().toFloat();
+        g.setColour (juce::Colours::black);
+        g.fillRect (bounds);
+
+        g.setColour (juce::Colours::darkgrey);
+        auto centerY = bounds.getCentreY();
+        g.drawHorizontalLine (juce::roundToInt (centerY), bounds.getX(), bounds.getRight());
+
+        g.setColour (juce::Colours::yellow);
+        juce::Path p;
+        int numPoints = 200;
+        
+        for (int i = 0; i < numPoints; ++i)
+        {
+            float xProportion = (float) i / (numPoints - 1);
+            float x = bounds.getX() + xProportion * bounds.getWidth();
+            
+            // Generate basic wave shape for visualization
+            float phaseVal = std::fmod (xProportion * 2.0f + currentPhase, 1.0f);
+            float yVal = 0.0f;
+            
+            if (currentWaveform == 0) // Sine
+                yVal = std::sin (phaseVal * juce::MathConstants<float>::twoPi);
+            else if (currentWaveform == 1) // Saw
+                yVal = phaseVal * 2.0f - 1.0f;
+            else if (currentWaveform == 2) // Triangle
+                yVal = 2.0f * std::abs (2.0f * phaseVal - 1.0f) - 1.0f;
+
+            yVal *= currentAmount;
+            
+            float y = centerY - (yVal * bounds.getHeight() * 0.45f);
+
+            if (i == 0)
+                p.startNewSubPath (x, y);
+            else
+                p.lineTo (x, y);
+        }
+
+        g.strokePath (p, juce::PathStrokeType (2.0f));
+    }
+
+private:
+    int currentWaveform = 0;
+    float currentPhase = 0.0f;
+    float currentAmount = 1.0f;
+};
+
+//==============================================================================
+class EffectTileComponent : public juce::Component
+{
+public:
+    EffectTileComponent (const juce::String& name) : effectName (name) {}
+
+    void paint (juce::Graphics& g) override
+    {
+        auto bounds = getLocalBounds().toFloat();
+        
+        // Background
+        g.setColour (juce::Colour (0xff2a2a2a));
+        g.fillRoundedRectangle (bounds, 5.0f);
+        
+        // Border
+        g.setColour (juce::Colour (0xff4a4a4a));
+        g.drawRoundedRectangle (bounds, 5.0f, 1.0f);
+        
+        // Text
+        g.setColour (juce::Colours::white);
+        g.setFont (18.0f);
+        g.drawText (effectName, getLocalBounds(), juce::Justification::centred);
+    }
+
+private:
+    juce::String effectName;
+};
+
+//==============================================================================
 class PluginEditor : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
@@ -241,6 +332,7 @@ public:
 
 private:
     void updateOscTabs();
+    void updateLfoTabs();
 
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -284,6 +376,41 @@ private:
     juce::Label sustainLabel;
     juce::Label releaseLabel;
 
+    // LFO Section
+    juce::GroupComponent lfoGroup { "LFO", "LFO" };
+    juce::TextButton lfoTab1 { "LFO 2-4" };
+    juce::TextButton lfoTab2 { "LFO 5-7" };
+    
+    std::array<juce::ShapeButton, 2> lfoSineButton {{
+        juce::ShapeButton { "Sine", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow },
+        juce::ShapeButton { "Sine", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow }
+    }};
+    std::array<juce::ShapeButton, 2> lfoSawButton {{
+        juce::ShapeButton { "Saw", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow },
+        juce::ShapeButton { "Saw", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow }
+    }};
+    std::array<juce::ShapeButton, 2> lfoTriangleButton {{
+        juce::ShapeButton { "Triangle", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow },
+        juce::ShapeButton { "Triangle", juce::Colours::yellow, juce::Colours::yellow.withAlpha(0.5f), juce::Colours::yellow }
+    }};
+    
+    std::array<juce::TextButton, 2> lfoSyncButton {{ juce::TextButton { "Hz" }, juce::TextButton { "Hz" } }};
+    
+    std::array<juce::Slider, 2> lfoAmountSlider;
+    std::array<juce::Slider, 2> lfoRateSlider;
+    std::array<juce::Slider, 2> lfoPhaseSlider;
+    std::array<juce::Label, 2> lfoAmountLabel;
+    std::array<juce::Label, 2> lfoRateLabel;
+    std::array<juce::Label, 2> lfoPhaseLabel;
+    
+    LfoDisplayComponent lfoDisplay;
+
+    // Effects Section
+    juce::GroupComponent effectsGroup { "Effects", "Effects" };
+    EffectTileComponent reverbTile { "REVERB" };
+    EffectTileComponent delayTile { "DELAY" };
+    EffectTileComponent compressorTile { "COMPRESSOR" };
+
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>, 7> oscWaveAttachments;
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 7> oscMixAttachments;
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 7> oscDetuneAttachments;
@@ -298,6 +425,10 @@ private:
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> unisonDetuneAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> unisonSpreadAttachment;
+
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 2> lfoAmountAttachment;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 2> lfoRateAttachment;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 2> lfoPhaseAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

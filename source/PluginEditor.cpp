@@ -21,6 +21,14 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         btn.setClickingTogglesState (true);
         btn.setToggleState (i == 0, juce::dontSendNotification);
         btn.onClick = [this] { updateOscTabs(); };
+
+        int connectedEdges = 0;
+        if (i > 0)
+            connectedEdges |= juce::Button::ConnectedOnLeft;
+        if (i < 6)
+            connectedEdges |= juce::Button::ConnectedOnRight;
+        btn.setConnectedEdges (connectedEdges);
+
         addAndMakeVisible (btn);
     }
 
@@ -83,8 +91,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     unisonDetuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "UNISONDETUNE", unisonDetuneSlider);
 
-    unisonDetuneSlider.onValueChange = [this]
-    {
+    unisonDetuneSlider.onValueChange = [this] {
         auto amount = (float) unisonDetuneSlider.getValue();
         for (int i = 1; i < 7; ++i)
         {
@@ -110,8 +117,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     unisonSpreadAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "UNISONSPREAD", unisonSpreadSlider);
 
-    unisonSpreadSlider.onValueChange = [this]
-    {
+    unisonSpreadSlider.onValueChange = [this] {
         auto amount = (float) unisonSpreadSlider.getValue();
         for (int i = 1; i < 7; ++i)
         {
@@ -190,9 +196,103 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     sustainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "SUSTAIN", sustainSlider);
     releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "RELEASE", releaseSlider);
 
+    // --- LFO Section Initialization ---
+    addAndMakeVisible (lfoGroup);
+    addAndMakeVisible (lfoTab1);
+    addAndMakeVisible (lfoTab2);
+    lfoTab1.setRadioGroupId (2);
+    lfoTab2.setRadioGroupId (2);
+    lfoTab1.setToggleState (true, juce::dontSendNotification);
+    lfoTab1.setConnectedEdges (juce::Button::ConnectedOnRight);
+    lfoTab2.setConnectedEdges (juce::Button::ConnectedOnLeft);
+
+    auto setupWaveButton = [this] (juce::ShapeButton& btn, juce::Path path, int lfoIdx, int waveIdx) {
+        btn.setShape (path, true, true, false);
+        btn.setRadioGroupId (3 + lfoIdx);
+        btn.setClickingTogglesState (true);
+        addAndMakeVisible (btn);
+        btn.onClick = [this, lfoIdx, waveIdx] {
+            if (auto* param = processorRef.apvts.getParameter ("LFO" + juce::String (lfoIdx + 1) + "WAVETYPE"))
+                param->setValueNotifyingHost (param->convertTo0to1 ((float) waveIdx));
+            int displayWave = (waveIdx == 0) ? 0 : ((waveIdx == 3) ? 1 : 2); // 0=Sine, 1=Saw, 2=Tri for display
+            lfoDisplay.setParameters (displayWave, lfoPhaseSlider[lfoIdx].getValue(), lfoAmountSlider[lfoIdx].getValue());
+        };
+    };
+
+    juce::Path sinePath;
+    for (int i = 0; i <= 100; ++i)
+    {
+        float x = (float) i / 100.0f;
+        float y = std::sin (x * juce::MathConstants<float>::twoPi) * -0.5f + 0.5f;
+        if (i == 0)
+            sinePath.startNewSubPath (x, y);
+        else
+            sinePath.lineTo (x, y);
+    }
+
+    juce::Path sawPath;
+    sawPath.startNewSubPath (0.0f, 1.0f);
+    sawPath.lineTo (1.0f, 0.0f);
+    sawPath.lineTo (1.0f, 1.0f);
+
+    juce::Path triPath;
+    triPath.startNewSubPath (0.0f, 0.5f);
+    triPath.lineTo (0.25f, 0.0f);
+    triPath.lineTo (0.75f, 1.0f);
+    triPath.lineTo (1.0f, 0.5f);
+
+    auto setupLfoKnob = [this] (juce::Slider& s, juce::Label& l, juce::String text) {
+        s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 40, 16);
+        addAndMakeVisible (s);
+        l.setText (text, juce::dontSendNotification);
+        l.attachToComponent (&s, false);
+        l.setJustificationType (juce::Justification::centred);
+    };
+
+    for (int i = 0; i < 2; ++i)
+    {
+        setupWaveButton (lfoSineButton[i], sinePath, i, 0); // Sine is index 0
+        setupWaveButton (lfoSawButton[i], sawPath, i, 3); // Saw is index 3
+        setupWaveButton (lfoTriangleButton[i], triPath, i, 1); // Tri is index 1
+
+        lfoSineButton[i].setToggleState (true, juce::dontSendNotification);
+
+        addAndMakeVisible (lfoSyncButton[i]);
+        lfoSyncButton[i].setClickingTogglesState (true);
+
+        setupLfoKnob (lfoAmountSlider[i], lfoAmountLabel[i], "Amount");
+        setupLfoKnob (lfoRateSlider[i], lfoRateLabel[i], "Rate");
+        setupLfoKnob (lfoPhaseSlider[i], lfoPhaseLabel[i], "Phase");
+
+        juce::String idStr = juce::String (i + 1);
+        lfoAmountAttachment[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "LFO" + idStr + "AMOUNT", lfoAmountSlider[i]);
+        lfoRateAttachment[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "LFO" + idStr + "RATE", lfoRateSlider[i]);
+        lfoPhaseAttachment[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processorRef.apvts, "LFO" + idStr + "PHASE", lfoPhaseSlider[i]);
+
+        lfoPhaseSlider[i].onValueChange = [this, i] {
+            int wave = lfoSineButton[i].getToggleState() ? 0 : (lfoSawButton[i].getToggleState() ? 1 : 2);
+            lfoDisplay.setParameters (wave, lfoPhaseSlider[i].getValue(), lfoAmountSlider[i].getValue());
+        };
+        lfoAmountSlider[i].onValueChange = lfoPhaseSlider[i].onValueChange;
+    }
+
+    addAndMakeVisible (lfoDisplay);
+    lfoDisplay.setParameters (0, 0.0f, 1.0f);
+
+    lfoTab1.onClick = [this] { updateLfoTabs(); };
+    lfoTab2.onClick = [this] { updateLfoTabs(); };
+
+    // --- Effects Section Initialization ---
+    addAndMakeVisible (effectsGroup);
+    addAndMakeVisible (reverbTile);
+    addAndMakeVisible (delayTile);
+    addAndMakeVisible (compressorTile);
+
     updateOscTabs();
+    updateLfoTabs();
     startTimerHz (30);
-    setSize (1000, 600);
+    setSize (1000, 700);
     addMouseListener (this, true);
 }
 
@@ -214,6 +314,26 @@ void PluginEditor::updateOscTabs()
         if (i > 0)
             oscDetuneSliders[i].setVisible (show);
     }
+}
+
+void PluginEditor::updateLfoTabs()
+{
+    int activeIdx = lfoTab1.getToggleState() ? 0 : 1;
+    for (int i = 0; i < 2; ++i)
+    {
+        bool isVisible = (i == activeIdx);
+        lfoSineButton[i].setVisible (isVisible);
+        lfoSawButton[i].setVisible (isVisible);
+        lfoTriangleButton[i].setVisible (isVisible);
+        lfoSyncButton[i].setVisible (isVisible);
+        lfoAmountSlider[i].setVisible (isVisible);
+        lfoRateSlider[i].setVisible (isVisible);
+        lfoPhaseSlider[i].setVisible (isVisible);
+    }
+
+    // Update display to match the active tab
+    int wave = lfoSineButton[activeIdx].getToggleState() ? 0 : (lfoSawButton[activeIdx].getToggleState() ? 1 : 2);
+    lfoDisplay.setParameters (wave, lfoPhaseSlider[activeIdx].getValue(), lfoAmountSlider[activeIdx].getValue());
 }
 
 void PluginEditor::visibilityChanged()
@@ -274,6 +394,7 @@ void PluginEditor::resized()
     auto area = getLocalBounds();
     keyboardComponent.setBounds (area.removeFromBottom (100));
 
+    auto lfoEffectsArea = area.removeFromBottom (232);
     auto bottomSection = area.removeFromBottom (240);
     outputVisualiser.setBounds (area.removeFromTop (128));
 
@@ -283,18 +404,16 @@ void PluginEditor::resized()
     auto oscArea = bottomSection.removeFromLeft (partWidth).reduced (10);
     oscGroup.setBounds (oscArea);
 
-    // Tab row – 7 equal buttons across full width
-    auto tabsArea = juce::Rectangle<int> (oscArea.getX() + 15, oscArea.getY(), oscArea.getWidth() - 15, 24);
-    auto tabWidth = tabsArea.getWidth() / 7;
+    // Tab row – 7 buttons centered, smaller size
+    int tabWidth = 65;
+    int totalTabsWidth = tabWidth * 7;
+    auto tabsArea = juce::Rectangle<int> (oscArea.getCentreX() - totalTabsWidth / 2, oscArea.getY(), totalTabsWidth, 22);
     for (int i = 0; i < 7; ++i)
     {
-        if (i < 6)
-            oscTabButtons[i].setBounds (tabsArea.removeFromLeft (tabWidth));
-        else
-            oscTabButtons[i].setBounds (tabsArea); // last tab takes remaining space
+        oscTabButtons[i].setBounds (tabsArea.removeFromLeft (tabWidth));
     }
 
-    auto oscContent = oscArea.withTop (oscArea.getY() + 24).reduced (10);
+    auto oscContent = oscArea.withTop (oscArea.getY() + 18).reduced (10);
 
     // Bottom controls row: wave selector + mix on left, detune + pan + unison knobs on right
     auto controlsRow = oscContent.removeFromBottom (90);
@@ -354,4 +473,48 @@ void PluginEditor::resized()
     decaySlider.setBounds (envContent.removeFromLeft (envKnobWidth));
     sustainSlider.setBounds (envContent.removeFromLeft (envKnobWidth));
     releaseSlider.setBounds (envContent);
+
+    // --- LFO Section (below OSC) ---
+    auto lfoArea = lfoEffectsArea.removeFromLeft (partWidth).reduced (10);
+    lfoGroup.setBounds (lfoArea);
+
+    int lfoTabW = 65;
+    auto lfoTabsBounds = juce::Rectangle<int> (lfoArea.getX() + 10, lfoArea.getY(), lfoTabW * 2, 22);
+    lfoTab1.setBounds (lfoTabsBounds.removeFromLeft (lfoTabW));
+    lfoTab2.setBounds (lfoTabsBounds);
+
+    auto lfoContent = lfoArea.withTop (lfoArea.getY() + 18).reduced (10);
+    auto lfoControlsRow = lfoContent.removeFromTop (60);
+
+    auto lfoWavesArea = lfoControlsRow.removeFromLeft (120);
+    int waveBtnW = 40;
+
+    auto syncBtnArea = lfoControlsRow.removeFromLeft (40);
+    auto lfoKnobsArea = lfoControlsRow;
+    int lfoKnobW = lfoKnobsArea.getWidth() / 3;
+
+    for (int i = 0; i < 2; ++i)
+    {
+        lfoSineButton[i].setBounds (lfoWavesArea.withWidth (waveBtnW).reduced (2));
+        lfoSawButton[i].setBounds (lfoWavesArea.withX (lfoWavesArea.getX() + waveBtnW).withWidth (waveBtnW).reduced (2));
+        lfoTriangleButton[i].setBounds (lfoWavesArea.withX (lfoWavesArea.getX() + waveBtnW * 2).withWidth (waveBtnW).reduced (2));
+
+        lfoSyncButton[i].setBounds (syncBtnArea.reduced (2, 15));
+
+        lfoAmountSlider[i].setBounds (lfoKnobsArea.withWidth (lfoKnobW));
+        lfoRateSlider[i].setBounds (lfoKnobsArea.withX (lfoKnobsArea.getX() + lfoKnobW).withWidth (lfoKnobW));
+        lfoPhaseSlider[i].setBounds (lfoKnobsArea.withX (lfoKnobsArea.getX() + lfoKnobW * 2).withWidth (lfoKnobW));
+    }
+
+    lfoDisplay.setBounds (lfoContent.withTrimmedTop (10));
+
+    // --- Effects Section (below ENV) ---
+    auto effectsArea = lfoEffectsArea.reduced (10);
+    effectsGroup.setBounds (effectsArea);
+
+    auto effectsContent = effectsArea.withTop (effectsArea.getY() + 18).reduced (10);
+    int tileHeight = effectsContent.getHeight() / 3;
+    reverbTile.setBounds (effectsContent.removeFromTop (tileHeight).reduced (0, 5));
+    delayTile.setBounds (effectsContent.removeFromTop (tileHeight).reduced (0, 5));
+    compressorTile.setBounds (effectsContent.reduced (0, 5));
 }
