@@ -1,4 +1,4 @@
-# Sonism
+# Sonism *(Alpha version)*
 
 Sonism is a modern **Supersaw synthesizer plugin** built with the JUCE framework. It features a 7-oscillator engine with independent detuning and stereo panning per oscillator, two independent LFOs, a state-variable filter, an amplitude envelope, and real-time waveform and spectrum visualization.
 
